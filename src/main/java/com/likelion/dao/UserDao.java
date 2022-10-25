@@ -34,7 +34,6 @@ public class UserDao {
         conn.close();
     }
 
-
     public User getUserOne(String id) throws SQLException, ClassNotFoundException {
         Connection conn = cm.makeConnection();
 
@@ -62,31 +61,81 @@ public class UserDao {
     public void getDeleteAll() throws SQLException {
         //db에 데이터 다 지우고 싶음
 
-        Connection conn = cm.makeConnection();
+        Connection conn = null;
+        PreparedStatement ps = null;
 
-        PreparedStatement ps = conn.prepareStatement("delete from users");
-        ps.executeUpdate();
+        try {
+            conn = cm.makeConnection();
 
-        ps.close();
-        conn.close();
+            ps = conn.prepareStatement("delete from users");
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if(ps != null){
+                try {
+                    ps.close();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            if(conn != null){
+                try {
+                    conn.close();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+        }
+
     }
 
     public int getCount() throws SQLException {
         //db에 데이터 몇 개 있는지 확인하고 싶음
 
-        Connection conn = new AwsConnectionMaker().makeConnection();
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
 
-        PreparedStatement ps = conn.prepareStatement("SELECT count(*) FROM users");
+        try {
+            conn = new AwsConnectionMaker().makeConnection();
 
-        ResultSet rs = ps.executeQuery();
-        rs.next();
-        int count = rs.getInt(1);
+            ps = conn.prepareStatement("SELECT count(*) FROM users");
 
-        rs.close();
-        ps.close();
-        conn.close();
+            rs = ps.executeQuery();
+            rs.next();
+            return rs.getInt(1);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
 
-        return count;
+            if(rs != null){
+                try {
+                    rs.close();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            if(ps != null){
+                try {
+                    ps.close();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            if(conn != null){
+                try {
+                    conn.close();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+        }
     }
 
     public static void main(String[] args) throws SQLException, ClassNotFoundException {

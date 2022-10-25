@@ -34,7 +34,7 @@ class UserDaoTest {
         this.user3 = new User("JUnitIdsu3", "jhk", "9012");
     }
 
-    //@Test
+    @Test
     void addAndGet() throws SQLException, ClassNotFoundException {
         //UserDao userDao = context.getBean("awsUserDao", UserDao.class); 필요없음. beforeEach
 

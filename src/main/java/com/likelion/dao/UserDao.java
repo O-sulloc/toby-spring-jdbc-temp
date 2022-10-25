@@ -19,6 +19,9 @@ public class UserDao {
     }
 
     public void add(User user) throws SQLException {
+        //AddStrategy addStatement = new AddStrategy(user);
+        //jdbcContextWithStatementStrategy(addStatement);
+
         this.jdbcContextWithStatementStrategy(conn -> {
             PreparedStatement ps = conn.prepareStatement("insert into users values (?,?,?)");
             ps.setString(1, user.getId());
@@ -113,7 +116,8 @@ public class UserDao {
         try {
             conn = cm.makeConnection();
 
-            ps = conn.prepareStatement("delete from users");
+            //ps = conn.prepareStatement("delete from users");
+            ps = stmt.makePreparedStatement(conn);
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);

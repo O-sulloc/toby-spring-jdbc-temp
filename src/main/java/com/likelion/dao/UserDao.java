@@ -11,15 +11,16 @@ import java.util.Map;
 public class UserDao {
     private DataSource dataSource;
 
+    private JdbcContext jdbcContext;
+
     public UserDao(DataSource dataSource) {
         this.dataSource = dataSource;
+        this.jdbcContext = new JdbcContext(dataSource); //
     }
 
-    public void add(User user) throws SQLException {
-        //AddStrategy addStatement = new AddStrategy(user);
-        //jdbcContextWithStatementStrategy(addStatement);
-
-        this.jdbcContextWithStatementStrategy(conn -> {
+    public void add(final User user) throws SQLException {
+        //익명 내부 클래스 적용. 람다식
+        this.jdbcContext.worktWithStatementStrategy(conn -> {
             PreparedStatement ps = conn.prepareStatement("insert into users values (?,?,?)");
             ps.setString(1, user.getId());
             ps.setString(2, user.getName());
@@ -54,10 +55,13 @@ public class UserDao {
     }
 
     public void getDeleteAll() throws SQLException {
-        //db에 데이터 다 지우고 싶음
-
-        StatementStrategy st = new DeleteAllStrategy();
-        jdbcContextWithStatementStrategy(st);
+        this.jdbcContext.worktWithStatementStrategy(new StatementStrategy() {
+            //익명의 내부 클래스
+            @Override
+            public PreparedStatement makePreparedStatement(Connection conn) throws SQLException {
+                return conn.prepareStatement("delete from users");
+            }
+        });
     }
 
     public int getCount() throws SQLException {
@@ -106,36 +110,6 @@ public class UserDao {
         }
     }
 
-    public void jdbcContextWithStatementStrategy(StatementStrategy stmt) throws SQLException{
-        Connection conn = null;
-        PreparedStatement ps = null;
 
-        try {
-            conn = dataSource.getConnection();
-
-            //ps = conn.prepareStatement("delete from users");
-            ps = stmt.makePreparedStatement(conn);
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if(ps != null){
-                try {
-                    ps.close();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            if(conn != null){
-                try {
-                    conn.close();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-        }
-    }
 
 }

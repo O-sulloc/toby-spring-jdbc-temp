@@ -43,4 +43,15 @@ public class JdbcContext {
 
         }
     }
+
+    public void executeSql(final String query) throws SQLException {
+        //deleteAll()에서 변하지 않는 부분만 빼기 (변하는 부분 = 쿼리문)
+        worktWithStatementStrategy(new StatementStrategy() {
+            //익명의 내부 클래스
+            @Override
+            public PreparedStatement makePreparedStatement(Connection conn) throws SQLException {
+                return conn.prepareStatement(query); //바뀌는 쿼리 부분은 파라미터로 받아오면 됨.
+            }
+        });
+    }
 }

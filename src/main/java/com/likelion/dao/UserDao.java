@@ -55,13 +55,7 @@ public class UserDao {
     }
 
     public void getDeleteAll() throws SQLException {
-        this.jdbcContext.worktWithStatementStrategy(new StatementStrategy() {
-            //익명의 내부 클래스
-            @Override
-            public PreparedStatement makePreparedStatement(Connection conn) throws SQLException {
-                return conn.prepareStatement("delete from users");
-            }
-        });
+        this.jdbcContext.executeSql("delete from users"); //여기서 쿼리만 넘기면 jdbcContext에 있는 executeSql 메서드가 처리해줌
     }
 
     public int getCount() throws SQLException {

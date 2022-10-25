@@ -1,6 +1,7 @@
 package com.likelion.dao;
 
 import com.likelion.domain.User;
+import org.springframework.dao.EmptyResultDataAccessException;
 
 import java.sql.*;
 import java.util.Map;
@@ -17,7 +18,7 @@ public class UserDao {
     }
 
     public void add(User user) throws ClassNotFoundException, SQLException {
-        Connection conn = new AwsConnectionMaker().makeConnection();
+        Connection conn = cm.makeConnection();
 
         PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO users(id, name, password) VALUES (?,?,?)"
@@ -35,36 +36,64 @@ public class UserDao {
 
 
     public User getUserOne(String id) throws SQLException, ClassNotFoundException {
-        Map<String, String> env = System.getenv();
-
-        String dbHost = env.get("DB_HOST");
-        String dbUser = env.get("DB_USER");
-        String dbPassword = env.get("DB_PASSWORD");
-
-        Class.forName("com.mysql.cj.jdbc.Driver");
-        //드라이버를 메모리에 로딩하는 과정. 생략 가능
-
-        Connection conn = DriverManager.getConnection(dbHost, dbUser, dbPassword);
+        Connection conn = cm.makeConnection();
 
         PreparedStatement ps = conn.prepareStatement("SELECT * FROM users where id=?");
         ps.setString(1, id);
 
         ResultSet rs = ps.executeQuery();
-        rs.next();
-        User user = new User(rs.getString("id"), rs.getString("name"), rs.getString("password"));
+
+        User user = null; //id에 해당하는 값 없을 때 예외처리 하기 위해서. 일단 user를 Null로 초기화
+        if(rs.next()){
+            //rs.next()가 true면(=값이 있으면,=있는 Id라면)
+
+            user = new User(rs.getString("id"), rs.getString("name"), rs.getString("password"));
+        }
 
         rs.close();
         ps.close();
         conn.close();
 
+        if(user == null) throw new EmptyResultDataAccessException(1); //없는 아이디면 예외처리
+
         return user;
     }
 
+    public void getDeleteAll() throws SQLException {
+        //db에 데이터 다 지우고 싶음
+
+        Connection conn = cm.makeConnection();
+
+        PreparedStatement ps = conn.prepareStatement("delete from users");
+        ps.executeUpdate();
+
+        ps.close();
+        conn.close();
+    }
+
+    public int getCount() throws SQLException {
+        //db에 데이터 몇 개 있는지 확인하고 싶음
+
+        Connection conn = new AwsConnectionMaker().makeConnection();
+
+        PreparedStatement ps = conn.prepareStatement("SELECT count(*) FROM users");
+
+        ResultSet rs = ps.executeQuery();
+        rs.next();
+        int count = rs.getInt(1);
+
+        rs.close();
+        ps.close();
+        conn.close();
+
+        return count;
+    }
 
     public static void main(String[] args) throws SQLException, ClassNotFoundException {
         UserDao userDao = new UserDao();
         //userDao.add();
-
+        //userDao.getCount();
+        //System.out.println(userDao.getCount());
         //User user=userDao.getUserOne("idtest");
         //System.out.println(user.getName());
     }

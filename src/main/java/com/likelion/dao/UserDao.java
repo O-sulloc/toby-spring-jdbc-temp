@@ -2,108 +2,67 @@ package com.likelion.dao;
 
 import com.likelion.domain.User;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 
 import javax.sql.DataSource;
 import javax.swing.plaf.nimbus.State;
 import java.sql.*;
+import java.util.List;
 import java.util.Map;
 
 public class UserDao {
     private DataSource dataSource;
 
-    private JdbcContext jdbcContext;
+    //jdbc template p262
+    private JdbcTemplate jdbcTemplate; //스프링이 제공하는 JDBC 코드용 기본 템플릿
 
     public UserDao(DataSource dataSource) {
-        this.dataSource = dataSource;
-        this.jdbcContext = new JdbcContext(dataSource); //
+        this.jdbcTemplate = new JdbcTemplate(dataSource);
+
     }
 
     public void add(final User user) throws SQLException {
         //익명 내부 클래스 적용. 람다식
-        this.jdbcContext.worktWithStatementStrategy(conn -> {
-            PreparedStatement ps = conn.prepareStatement("insert into users values (?,?,?)");
-            ps.setString(1, user.getId());
-            ps.setString(2, user.getName());
-            ps.setString(3, user.getPassword());
-
-            return ps;
-        });
+        this.jdbcTemplate.update("insert into users values (?,?,?)",
+                user.getId(), user.getName(), user.getPassword());
     }
 
     public User getUserOne(String id) throws SQLException, ClassNotFoundException {
-        Connection conn = dataSource.getConnection();
+        String sql = "select * from users where id=?";
+        RowMapper<User> rowMapper = new RowMapper<User>() {
+            @Override
+            public User mapRow(ResultSet rs, int rowNum) throws SQLException {
+                User user = new User(rs.getString("id"), rs.getNString("name"), rs.getNString("password"));
 
-        PreparedStatement ps = conn.prepareStatement("SELECT * FROM users where id=?");
-        ps.setString(1, id);
+                return user;
+            }
+        };
 
-        ResultSet rs = ps.executeQuery();
-
-        User user = null; //id에 해당하는 값 없을 때 예외처리 하기 위해서. 일단 user를 Null로 초기화
-        if(rs.next()){
-            //rs.next()가 true면(=값이 있으면,=있는 Id라면)
-
-            user = new User(rs.getString("id"), rs.getString("name"), rs.getString("password"));
-        }
-
-        rs.close();
-        ps.close();
-        conn.close();
-
-        if(user == null) throw new EmptyResultDataAccessException(1); //없는 아이디면 예외처리
-
-        return user;
+        return this.jdbcTemplate.queryForObject(sql, rowMapper, id);
     }
 
     public void getDeleteAll() throws SQLException {
-        this.jdbcContext.executeSql("delete from users"); //여기서 쿼리만 넘기면 jdbcContext에 있는 executeSql 메서드가 처리해줌
+        //this.jdbcContext.executeSql("delete from users"); //여기서 쿼리만 넘기면 jdbcContext에 있는 executeSql 메서드가 처리해줌
+        //이것도 이제 안 씀. jdbcTemplate으로 처리할 것임.
+
+        this.jdbcTemplate.update("delete from users");
     }
 
     public int getCount() throws SQLException {
-        //db에 데이터 몇 개 있는지 확인하고 싶음
-
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-
-        try {
-            conn = dataSource.getConnection();
-
-            ps = conn.prepareStatement("SELECT count(*) FROM users");
-
-            rs = ps.executeQuery();
-            rs.next();
-            return rs.getInt(1);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        } finally {
-
-            if(rs != null){
-                try {
-                    rs.close();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            if(ps != null){
-                try {
-                    ps.close();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            if(conn != null){
-                try {
-                    conn.close();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-        }
+        return this.jdbcTemplate.queryForObject("select count(*) from users", Integer.class);
     }
 
+    public List<User> getAllUsers(){
+        String sql = "select * from users order by id";
+        RowMapper<User> rowMapper = new RowMapper<User>() {
+            @Override
+            public User mapRow(ResultSet rs, int rowNum) throws SQLException {
+                User user = new User(rs.getString("id"), rs.getString("name"), rs.getString("password"));
 
-
+                return user;
+            }
+        };
+        return this.jdbcTemplate.query(sql, rowMapper);
+    }
 }

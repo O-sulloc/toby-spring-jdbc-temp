@@ -12,6 +12,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.sql.SQLException;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,26 +28,26 @@ class UserDaoTest {
     User user3;
 
     @BeforeEach
-    void setUp(){
+    void setUp() {
         this.userDao = context.getBean("awsUserDao", UserDao.class);
         this.user1 = new User("JUnitIdsu1", "김정현", "1234");
         this.user2 = new User("JUnitIdsu2", "kjh", "5678");
         this.user3 = new User("JUnitIdsu3", "jhk", "9012");
     }
 
-    @Test
+    //@Test
     void addAndGet() throws SQLException, ClassNotFoundException {
         //UserDao userDao = context.getBean("awsUserDao", UserDao.class); 필요없음. beforeEach
 
         userDao.getDeleteAll();
         userDao.getCount();
-        assertEquals(0,userDao.getCount());
+        assertEquals(0, userDao.getCount());
 
         userDao.add(user1);
         userDao.add(user2);
         userDao.add(user3);
         userDao.getCount();
-        assertEquals(3,userDao.getCount());
+        assertEquals(3, userDao.getCount());
 
         User findUser = userDao.getUserOne(user1.getId());
         assertEquals(user1.getName(), findUser.getName());
@@ -54,8 +55,22 @@ class UserDaoTest {
 
     //@Test
     void noSuchId() throws SQLException, ClassNotFoundException {
-        assertThrows(EmptyResultDataAccessException.class, ()->{
+        assertThrows(EmptyResultDataAccessException.class, () -> {
             userDao.getUserOne("NoId");
         });
+    }
+
+    @Test
+    void getAllUsersTest() throws SQLException {
+        userDao.getDeleteAll();
+
+        List<User> users = userDao.getAllUsers();
+        assertEquals(0, users.size());
+
+        userDao.add(user1);
+        userDao.add(user2);
+        userDao.add(user3);
+        users = userDao.getAllUsers();
+        assertEquals(3, users.size());
     }
 }

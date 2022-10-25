@@ -3,6 +3,7 @@ package com.likelion.dao;
 import com.likelion.domain.User;
 import org.springframework.dao.EmptyResultDataAccessException;
 
+import javax.swing.plaf.nimbus.State;
 import java.sql.*;
 import java.util.Map;
 
@@ -17,21 +18,15 @@ public class UserDao {
         this.cm = cm;
     }
 
-    public void add(User user) throws ClassNotFoundException, SQLException {
-        Connection conn = cm.makeConnection();
+    public void add(User user) throws SQLException {
+        this.jdbcContextWithStatementStrategy(conn -> {
+            PreparedStatement ps = conn.prepareStatement("insert into users values (?,?,?)");
+            ps.setString(1, user.getId());
+            ps.setString(2, user.getName());
+            ps.setString(3, user.getPassword());
 
-        PreparedStatement ps = conn.prepareStatement(
-                "INSERT INTO users(id, name, password) VALUES (?,?,?)"
-        );
-
-        ps.setString(1, user.getId());
-        ps.setString(2, user.getName());
-        ps.setString(3, user.getPassword());
-
-        int status = ps.executeUpdate(); //상태 확인
-
-        ps.close();
-        conn.close();
+            return ps;
+        });
     }
 
     public User getUserOne(String id) throws SQLException, ClassNotFoundException {
@@ -61,35 +56,8 @@ public class UserDao {
     public void getDeleteAll() throws SQLException {
         //db에 데이터 다 지우고 싶음
 
-        Connection conn = null;
-        PreparedStatement ps = null;
-
-        try {
-            conn = cm.makeConnection();
-
-            ps = conn.prepareStatement("delete from users");
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if(ps != null){
-                try {
-                    ps.close();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            if(conn != null){
-                try {
-                    conn.close();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-        }
-
+        StatementStrategy st = new DeleteAllStrategy();
+        jdbcContextWithStatementStrategy(st);
     }
 
     public int getCount() throws SQLException {
@@ -138,6 +106,36 @@ public class UserDao {
         }
     }
 
+    public void jdbcContextWithStatementStrategy(StatementStrategy stmt) throws SQLException{
+        Connection conn = null;
+        PreparedStatement ps = null;
+
+        try {
+            conn = cm.makeConnection();
+
+            ps = conn.prepareStatement("delete from users");
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if(ps != null){
+                try {
+                    ps.close();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            if(conn != null){
+                try {
+                    conn.close();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+        }
+    }
     public static void main(String[] args) throws SQLException, ClassNotFoundException {
         UserDao userDao = new UserDao();
         //userDao.add();

@@ -3,19 +3,16 @@ package com.likelion.dao;
 import com.likelion.domain.User;
 import org.springframework.dao.EmptyResultDataAccessException;
 
+import javax.sql.DataSource;
 import javax.swing.plaf.nimbus.State;
 import java.sql.*;
 import java.util.Map;
 
 public class UserDao {
-    private ConnectionMaker cm;
+    private DataSource dataSource;
 
-    public UserDao(){
-        this.cm = new AwsConnectionMaker();
-    }
-
-    public UserDao(ConnectionMaker cm) {
-        this.cm = cm;
+    public UserDao(DataSource dataSource) {
+        this.dataSource = dataSource;
     }
 
     public void add(User user) throws SQLException {
@@ -33,7 +30,7 @@ public class UserDao {
     }
 
     public User getUserOne(String id) throws SQLException, ClassNotFoundException {
-        Connection conn = cm.makeConnection();
+        Connection conn = dataSource.getConnection();
 
         PreparedStatement ps = conn.prepareStatement("SELECT * FROM users where id=?");
         ps.setString(1, id);
@@ -71,7 +68,7 @@ public class UserDao {
         ResultSet rs = null;
 
         try {
-            conn = new AwsConnectionMaker().makeConnection();
+            conn = dataSource.getConnection();
 
             ps = conn.prepareStatement("SELECT count(*) FROM users");
 
@@ -114,7 +111,7 @@ public class UserDao {
         PreparedStatement ps = null;
 
         try {
-            conn = cm.makeConnection();
+            conn = dataSource.getConnection();
 
             //ps = conn.prepareStatement("delete from users");
             ps = stmt.makePreparedStatement(conn);
@@ -140,12 +137,5 @@ public class UserDao {
 
         }
     }
-    public static void main(String[] args) throws SQLException, ClassNotFoundException {
-        UserDao userDao = new UserDao();
-        //userDao.add();
-        //userDao.getCount();
-        //System.out.println(userDao.getCount());
-        //User user=userDao.getUserOne("idtest");
-        //System.out.println(user.getName());
-    }
+
 }
